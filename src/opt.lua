@@ -8,9 +8,10 @@ Create a new option definition.
 @param alias string|nil: short option alias (single character or nil)
 @param has_arg boolean: does this option take an argument?
 @param handler function: callback for option
+@param help string: help text for usage output
 @return table: option definition
 ]]
-local function new_opt(name, alias, has_arg, handler)
+local function new_opt(name, alias, has_arg, handler, help, id)
 	if alias and #alias > 1 then
 		error("alias must be a single character or nil")
 	end
@@ -19,6 +20,8 @@ local function new_opt(name, alias, has_arg, handler)
 		alias = alias,
 		has_arg = has_arg,
 		handler = handler,
+		help = help or "",
+		id = id,
 	}
 end
 
@@ -30,7 +33,7 @@ Create a new option set for parsing.
 @return OptSet: new option set
 ]]
 function opt.new_optset()
-	return setmetatable({ cfg = {} }, OptSet)
+	return setmetatable({ cfg = {}, _opt_id = 0 }, OptSet)
 end
 
 --[[
@@ -39,12 +42,54 @@ Register an option with a long name and optional short alias.
 @param alias string|nil: short option alias (single character or nil)
 @param has_arg boolean: does this option take an argument?
 @param handler function: callback for option
+@param help string: help text for usage output
 ]]
-function OptSet:opt(name, alias, has_arg, handler)
-	self.cfg["--" .. name] = new_opt(name, alias, has_arg, handler)
+function OptSet:opt(name, alias, has_arg, handler, help)
+	self._opt_id = self._opt_id + 1
+	local opt_obj = new_opt(name, alias, has_arg, handler, help, self._opt_id)
+	self.cfg["--" .. name] = opt_obj
 	if alias and alias ~= "" then
-		self.cfg["-" .. alias] = self.cfg["--" .. name]
+		self.cfg["-" .. alias] = opt_obj
 	end
+end
+
+--[[
+Show usage for all defined options.
+@return string: usage text
+]]
+function OptSet:usage()
+	local out = {}
+	local opts = {}
+	local HELP_COL = 30
+	local PREFIX_MAX = HELP_COL - 2
+	for k, opt in pairs(self.cfg) do
+		if k:sub(1,2) == "--" then
+			local short = opt.alias and ("-" .. opt.alias) or ""
+			local long = "--" .. opt.name
+			local arg = opt.has_arg and " <ARG>" or ""
+			local flagstr
+			if short ~= "" then
+				flagstr = string.format("  %s, %s%s", short, long, arg)
+			else
+				flagstr = string.format("      %s%s", long, arg)
+			end
+			local prefix = flagstr
+			table.insert(opts, {flagstr = prefix, help = opt.help, wrap = (#prefix + 1 > PREFIX_MAX), id = opt.id})
+		end
+	end
+	-- Sort by insertion order
+	table.sort(opts, function(a, b) return a.id < b.id end)
+	for _, line in ipairs(opts) do
+		if line.wrap then
+			table.insert(out, line.flagstr)
+			table.insert(out, string.rep(" ", HELP_COL) .. (line.help or ""))
+		else
+			local pad = HELP_COL - #line.flagstr
+			if pad < 1 then pad = 1 end
+			table.insert(out, line.flagstr .. string.rep(" ", pad) .. (line.help or ""))
+		end
+	end
+	return table.concat(out, "\n") .. "\n"
 end
 
 -- Internal: handle short options, supporting grouping (eg: -abc)
