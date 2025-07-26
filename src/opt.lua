@@ -1,4 +1,4 @@
--- opt.lua - Flag parser with grouped short option support
+-- opt.lua - A CLI Option parser
 
 local opt = {}
 
@@ -11,17 +11,17 @@ Create a new option definition.
 @param help string: help text for usage output
 @return table: option definition
 ]]
-local function new_opt(name, alias, has_arg, handler, help, id)
+local function new_opt(id, name, alias, has_arg, help, handler)
 	if alias and #alias > 1 then
 		error("alias must be a single character or nil")
 	end
 	return {
+		id = id,
 		name = name,
 		alias = alias,
 		has_arg = has_arg,
-		handler = handler,
 		help = help or "",
-		id = id,
+		handler = handler,
 	}
 end
 
@@ -44,9 +44,9 @@ Register an option with a long name and optional short alias.
 @param handler function: callback for option
 @param help string: help text for usage output
 ]]
-function OptSet:opt(name, alias, has_arg, handler, help)
+function OptSet:opt(name, alias, has_arg, help, handler)
 	self._opt_id = self._opt_id + 1
-	local opt_obj = new_opt(name, alias, has_arg, handler, help, self._opt_id)
+	local opt_obj = new_opt(self._opt_id, name, alias, has_arg, help, handler)
 	self.cfg["--" .. name] = opt_obj
 	if alias and alias ~= "" then
 		self.cfg["-" .. alias] = opt_obj
@@ -100,8 +100,7 @@ local function handle_short(self, group, args, i, fallback)
 		local key = "-" .. ch
 		local cfg = self.cfg[key]
 		if not cfg then
-			local err = fallback(key)
-			if err then return err, i end
+			fallback(key)
 		elseif cfg.has_arg then
 			local val
 			if j < #group then
@@ -109,21 +108,19 @@ local function handle_short(self, group, args, i, fallback)
 				if val:sub(1,1) == "=" then
 					val = val:sub(2)
 				elseif #val > 0 then
-					return "missing argument for " .. key, i
+					error("missing argument for " .. key)
 				end
 				j = #group
 			elseif i <= #args then
 				val = args[i]
 				i = i + 1
 			else
-				return "missing argument for " .. key, i
+				error("missing argument for " .. key)
 			end
-			local err = cfg.handler(key, val)
-			if err then return err, i end
+			cfg.handler(key, val)
 			break
 		else
-			local err = cfg.handler(key, "")
-			if err then return err, i end
+			cfg.handler(key, "")
 		end
 		j = j + 1
 	end
@@ -142,28 +139,23 @@ local function handle_long(self, arg, args, i, fallback)
 	end
 	local cfg = self.cfg["--" .. name]
 	if not cfg then
-		-- Pass unknown long option to fallback
-		local err = fallback(arg)
-		if err then return err, i end
+		fallback(arg)
 		return nil, i
 	end
 	if cfg.has_arg then
 		if val ~= nil then
-			local err = cfg.handler("--" .. name, val)
-			if err then return err, i end
+			cfg.handler("--" .. name, val)
 		else
 			if i <= #args then
 				val = args[i]
 				i = i + 1
-				local err = cfg.handler("--" .. name, val)
-				if err then return err, i end
+				cfg.handler("--" .. name, val)
 			else
-				return "missing argument for --" .. name, i
+				error("missing argument for --" .. name)
 			end
 		end
 	else
-		local err = cfg.handler("--" .. name, "")
-		if err then return err, i end
+		cfg.handler("--" .. name, "")
 	end
 	return nil, i
 end
@@ -183,8 +175,7 @@ function OptSet:parse(args, fallback)
 		if arg == "--" then
 			-- Everything after this is positional
 			while i <= #args do
-				local err = fallback(args[i])
-				if err then return err end
+				fallback(args[i])
 				i = i + 1
 			end
 			break
@@ -192,16 +183,13 @@ function OptSet:parse(args, fallback)
 			-- Long options or "--" to terminate options
 			local err
 			err, i = handle_long(self, arg, args, i, fallback)
-			if err then return err end
 		elseif arg:sub(1, 1) == "-" and #arg > 1 then
 			local group = arg:sub(2)
 			local err
 			err, i = handle_short(self, group, args, i, fallback)
-			if err then return err end
 		else
 			-- Positional
-			local err = fallback(arg)
-			if err then return err end
+			fallback(arg)
 		end
 	end
 	return nil

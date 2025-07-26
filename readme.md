@@ -17,15 +17,21 @@ A simple Lua command-line option parser. Supports short and long options, groupe
 
 ```lua
 local opt = require "opt"
+local verbose = false
+
+local function handle_verbose(_, value)
+  verbose = value
+end
 
 local opts = opt.new_optset()
-opts:opt("help", "h", false, function(name)
+opts:opt("help", "h", false, "Show help", function()
   print("Usage: ...")
   os.exit(0)
-end, "Show help")
-opts:opt("output", "o", true, function(name, value)
+end)
+opts:opt("output", "o", true, "Set output file", function(_, value)
   print("Output file:", value)
-end, "Set output file")
+end)
+opts:opt("verbose", "v", false, "Enable verbosity", handle_verbose)
 
 local function fallback(arg)
   print("Positional or unknown:", arg)
@@ -38,12 +44,12 @@ print(opts:usage())
 ## API
 
 -   `opt.new_optset()` creates a new option set
--   `opts:opt(name, alias, has_arg, handler, help)` registers an option
+-   `opts:opt(name, alias, has_arg, help, handler)` registers an option
     -   `name`: long option name (eg: "output")
     -   `alias`: short option (eg: "o"), or nil
     -   `has_arg`: true if option takes a value
-    -   `handler`: function called with option name and value (if any)
     -   `help`: help string for usage output
+    -   `handler`: function called with option name and value (if any)
 -   `opts:parse(args, fallback)` parses the args
     -   `args`: argument list (eg: `{...}`)
     -   `fallback`: function called for unknown options and positionals
@@ -52,12 +58,12 @@ print(opts:usage())
 ## Example
 
 ```lua
-opts:opt("verbose", "v", false, function(name)
+opts:opt("verbose", "v", false, "Enable verbose mode", function(_, _)
   print("Verbose mode enabled")
-end, "Enable verbose mode")
-opts:opt("config", "c", true, function(name, value)
+end)
+opts:opt("config", "c", true, "Set config file", function(name, value)
   print("Config file:", value)
-end, "Set config file")
+end)
 ```
 
 ## License
