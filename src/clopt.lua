@@ -80,13 +80,20 @@ function OptSet:usage()
 	-- Sort by insertion order
 	table.sort(opts, function(a, b) return a.id < b.id end)
 	for _, line in ipairs(opts) do
+		local help = (line.help and line.help ~= "") and line.help or nil
 		if line.wrap then
 			table.insert(out, line.flagstr)
-			table.insert(out, string.rep(" ", HELP_COL) .. (line.help or ""))
+			if help then
+				table.insert(out, string.rep(" ", HELP_COL) .. help)
+			end
 		else
 			local pad = HELP_COL - #line.flagstr
 			if pad < 1 then pad = 1 end
-			table.insert(out, line.flagstr .. string.rep(" ", pad) .. (line.help or ""))
+			if help then
+				table.insert(out, line.flagstr .. string.rep(" ", pad) .. help)
+			else
+				table.insert(out, line.flagstr)
+			end
 		end
 	end
 	return table.concat(out, "\n") .. "\n"

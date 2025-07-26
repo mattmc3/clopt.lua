@@ -201,4 +201,15 @@ describe("opt parser", function()
 		assert.are.equal(expected, usage)
 	end)
 
+	it("does not show help for undocumented options", function()
+		local opts = clopt.new_optset()
+		opts:opt("foo", "f", false, nil, function() end)
+		opts:opt("bar", nil, true, "Bar option", function() end)
+		local expected = [[  -f, --foo
+      --bar <ARG>             Bar option
+]]
+		local usage = opts:usage()
+		assert.are.equal(expected, usage)
+	end)
+
 end)

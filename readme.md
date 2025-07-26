@@ -10,7 +10,6 @@ A simple Lua command-line option parser. Supports short and long options, groupe
 -   Long options (eg: --foo)
 -   Long options with values (eg: --bar=val or --bar val)
 -   Custom fallback for unknown options and positionals
--   Last value wins for repeated options
 -   Usage output with help text
 
 ## Usage
