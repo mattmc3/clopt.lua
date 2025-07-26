@@ -12,6 +12,20 @@ A simple Lua command-line option parser. Supports short and long options, groupe
 -   Custom fallback for unknown options and positionals
 -   Usage output with help text
 
+## Installation
+
+Install via LuaRocks:
+
+```sh
+luarocks install clopt
+```
+
+Or for the latest development version:
+
+```sh
+luarocks install --server=https://luarocks.org/dev clopt
+```
+
 ## Usage
 
 ```lua

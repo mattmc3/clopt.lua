@@ -1,7 +1,8 @@
 package = "clopt"
-version = "scm-1"
+version = "0.1.1-1"
 source = {
-  url = "git+https://github.com/mattmc3/clopt.lua.git"
+  url = "git+https://github.com/mattmc3/clopt.lua.git",
+  tag = "v0.1.1"
 }
 description = {
   summary = "A simple Lua command-line option parser with callbacks.",
@@ -17,9 +18,11 @@ description = {
     - help text usage output
   ]],
   homepage = "https://github.com/mattmc3/clopt.lua",
-  license = "MIT"
+  license = "MIT",
+  labels = { "flags", "args", "cli", "options", "opts", "argument-handling" }
 }
 dependencies = {
+  "lua >= 5.1"
 }
 build = {
   type = "builtin",
