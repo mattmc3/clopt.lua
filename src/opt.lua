@@ -2,9 +2,13 @@
 
 local opt = {}
 
-local function new_opt(name, has_arg, handler)
+local function new_opt(name, alias, has_arg, handler)
+	if alias and #alias > 1 then
+		error("alias must be a single character or nil")
+	end
 	return {
 		name = name,
+		alias = alias,
 		has_arg = has_arg,
 		handler = handler,
 	}
@@ -13,35 +17,25 @@ end
 local OptSet = {}
 OptSet.__index = OptSet
 
-function opt.new_opt_set()
+function opt.new_optset()
 	return setmetatable({ cfg = {} }, OptSet)
 end
 
--- Define flag like `-a`
-function OptSet:opt(name, handler)
-	self.cfg[name] = new_opt(name, false, function(_, _) return handler("-" .. name) end)
-end
-
--- Define option like `-o value` or `-o=value`
-function OptSet:arg(name, handler)
-	self.cfg[name] = new_opt(name, true, handler)
-end
-
-function OptSet:long_opt(name, handler)
-	self.cfg["--" .. name] = new_opt("--" .. name, false, function(_, _) return handler("--" .. name) end)
-end
-
-function OptSet:long_arg(name, handler)
-	self.cfg["--" .. name] = new_opt("--" .. name, true, handler)
+function OptSet:opt(name, alias, has_arg, handler)
+	self.cfg["--" .. name] = new_opt(name, alias, has_arg, handler)
+	if alias and alias ~= "" then
+		self.cfg["-" .. alias] = self.cfg["--" .. name]
+	end
 end
 
 local function handle_group(self, group, args, i, fallback)
 	local j = 1
 	while j <= #group do
 		local ch = group:sub(j, j)
-		local cfg = self.cfg[ch]
+		local key = "-" .. ch
+		local cfg = self.cfg[key]
 		if not cfg then
-			local err = fallback("-" .. ch)
+			local err = fallback(key)
 			if err then return err, i end
 		elseif cfg.has_arg then
 			local val
@@ -50,20 +44,20 @@ local function handle_group(self, group, args, i, fallback)
 				if val:sub(1,1) == "=" then
 					val = val:sub(2)
 				elseif #val > 0 then
-					return "missing argument for -" .. ch, i
+					return "missing argument for " .. key, i
 				end
 				j = #group
 			elseif i <= #args then
 				val = args[i]
 				i = i + 1
 			else
-				return "missing argument for -" .. ch, i
+				return "missing argument for " .. key, i
 			end
-			local err = cfg.handler("-" .. ch, val)
+			local err = cfg.handler(key, val)
 			if err then return err, i end
 			break
 		else
-			local err = cfg.handler("-" .. ch, "")
+			local err = cfg.handler(key, "")
 			if err then return err, i end
 		end
 		j = j + 1
