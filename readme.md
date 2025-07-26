@@ -1,4 +1,4 @@
-# opt.lua
+# clopt.lua
 
 A simple Lua command-line option parser. Supports short and long options, grouped short flags, and options with values. Designed to be easy to use and flexible for most CLI scripts.
 
@@ -16,16 +16,17 @@ A simple Lua command-line option parser. Supports short and long options, groupe
 ## Usage
 
 ```lua
-local opt = require "opt"
+local clopt = require "clopt"
 local verbose = false
 
 local function handle_verbose(_, value)
   verbose = value
 end
 
-local opts = opt.new_optset()
+local opts = clopt.new_optset()
 opts:opt("help", "h", false, "Show help", function()
-  print("Usage: ...")
+  print("lua myapp.lua [-h/--help] [-v/--verbose] [-o/--output=ARG] <ARGS>...")
+  print(opts:usage())
   os.exit(0)
 end)
 opts:opt("output", "o", true, "Set output file", function(_, value)
@@ -43,7 +44,7 @@ print(opts:usage())
 
 ## API
 
--   `opt.new_optset()` creates a new option set
+-   `clopt.new_optset()` creates a new option set
 -   `opts:opt(name, alias, has_arg, help, handler)` registers an option
     -   `name`: long option name (eg: "output")
     -   `alias`: short option (eg: "o"), or nil

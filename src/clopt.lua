@@ -1,4 +1,4 @@
--- opt.lua - A CLI Option parser
+-- clopt.lua - A command line option parser with callbacks
 
 local opt = {}
 

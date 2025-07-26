@@ -1,10 +1,10 @@
 package.path = "./src/?.lua;" .. package.path
-local opt = require "opt"
+local clopt = require "clopt"
 
-local opts = opt.new_optset()
+local opts = clopt.new_optset()
 
 local function usage()
-	print("lua example_usage.lua [-h/--help]")
+	print("lua example_usage.lua [-h/--help] [-v/--verbose] [-o/--output=ARG] <ARGS>...")
 	print(opts:usage())
 	os.exit(0)
 end
